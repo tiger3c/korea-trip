@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>韓国旅行 2026.5.31-6.3</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
+    background: #f7f6f3;
+    color: #2d2d2d;
+  }
+
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  /* ========= ヘッダー ========= */
+  .header {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 50%, #f06595 100%);
+    color: white;
+    padding: 14px 18px;
+    text-align: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  .header h1 { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+  .header .date { font-size: 11px; opacity: 0.95; letter-spacing: 1px; }
+
+  /* ========= 日付タブ ========= */
+  .day-tabs {
+    display: flex;
+    background: white;
+    padding: 8px;
+    gap: 6px;
+    flex-shrink: 0;
+    border-bottom: 1px solid #eee;
+  }
+  .day-tab {
+    flex: 1;
+    padding: 10px 6px;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    background: #f5f5f5;
+    color: #999;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    line-height: 1.3;
+    text-align: center;
+  }
+  .day-tab.active { color: white; transform: scale(1.02); }
+  .day-tab.active.d1 { background: #ff6a88; }
+  .day-tab.active.d2 { background: #ff8a65; }
+  .day-tab.active.d3 { background: #66bb6a; }
+  .day-tab.active.d4 { background: #ab7df0; }
+
+  /* ========= 全日コースリンクバー ========= */
+  .full-course-bar {
+    background: #fff8f0;
+    padding: 10px 14px;
+    flex-shrink: 0;
+    border-bottom: 1px solid #ffe3d6;
+    text-align: center;
+  }
+  .full-course-bar a {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #03c75a;
+    color: white;
+    border-radius: 20px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(3,199,90,0.3);
+  }
+  .full-course-bar .label {
+    font-size: 10px;
+    color: #888;
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+
+  /* ========= メイン領域 ========= */
+  .main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #map {
+    flex: 1.4;
+    height: 100%;
+  }
+
+  .panel {
+    flex: 1;
+    max-width: 380px;
+    background: #f7f6f3;
+    overflow-y: auto;
+    padding: 14px;
+    scroll-behavior: smooth;
+  }
+
+  @media (max-width: 768px) {
+    .main { flex-direction: column; }
+    #map { flex: none; height: 40%; }
+    .panel {
+      max-width: 100%;
+      flex: 1;
+      padding: 12px;
+    }
+  }
+
+  /* ========= 日サマリー ========= */
+  .day-summary {
+    background: white;
+    padding: 14px 16px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .day-summary .day-label {
+    font-size: 11px;
+    color: #999;
+    letter-spacing: 1px;
+    font-weight: 700;
+  }
+  .day-summary h2 {
+    font-size: 15px;
+    margin: 4px 0 6px;
+    color: #2d2d2d;
+  }
+  .day-summary p {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.5;
+  }
+
+  /* 日サマリーのNaverリンクボタン */
+  .day-naver-btn {
+    display: block;
+    margin-top: 10px;
+    padding: 10px;
+    background: #03c75a;
+    color: white;
+    text-align: center;
+    border-radius: 10px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .time-category {
+    font-size: 10px;
+    color: #999;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin: 16px 4px 8px;
+    text-transform: uppercase;
+  }
+
+  /* ========= カード ========= */
+  .card {
+    background: white;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.25s;
+    border: 2px solid transparent;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    position: relative;
+  }
+  .card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .card.active {
+    border-color: #ee5a6f;
+    box-shadow: 0 4px 16px rgba(238,90,111,0.2);
+    transform: scale(1.01);
+  }
+
+  .card-time {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ee5a6f;
+    margin-bottom: 6px;
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #2d2d2d;
+    margin-bottom: 3px;
+    line-height: 1.4;
+  }
+  .card-ko {
+    font-size: 11px;
+    color: #999;
+    margin-bottom: 6px;
+  }
+  .card-rating {
+    display: inline-block;
+    font-size: 10px;
+    color: #ff9800;
+    margin-bottom: 6px;
+  }
+  .card-rating .dot { color: #ccc; margin: 0 4px; }
+  .card-type {
+    font-size: 10px;
+    color: #888;
+  }
+  .card-memo {
+    font-size: 11px;
+    color: #555;
+    line-height: 1.5;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px dashed #f0eae5;
+  }
+
+  /* ナバーボタン */
+  .naver-link {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 6px 12px;
+    background: #03c75a;
+    color: white !important;
+    border-radius: 16px;
+    text-decoration: none;
+    font-size: 10px;
+    font-weight: 700;
+    transition: all 0.2s;
+  }
+  .naver-link:hover { background: #02a847; }
+  .naver-link::before { content: "📍 "; }
+
+  .card-marker {
+    position: absolute;
+    left: -10px;
+    top: 12px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: white;
+    border: 3px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 11px;
+  }
+  .d1 .card-marker { border-color: #ff6a88; color: #ff6a88; }
+  .d2 .card-marker { border-color: #ff8a65; color: #ff8a65; }
+  .d3 .card-marker { border-color: #66bb6a; color: #66bb6a; }
+  .d4 .card-marker { border-color: #ab7df0; color: #ab7df0; }
+
+  /* ========= マーカー ========= */
+  .number-marker {
+    background: white;
+    border-radius: 50%;
+    width: 32px !important;
+    height: 32px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    border: 3px solid;
+    transition: all 0.2s;
+  }
+  .number-marker.active {
+    transform: scale(1.4);
+    z-index: 1000 !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  }
+  .m-d1 { border-color: #ff6a88; color: #ff6a88; }
+  .m-d2 { border-color: #ff8a65; color: #ff8a65; }
+  .m-d3 { border-color: #66bb6a; color: #66bb6a; }
+  .m-d4 { border-color: #ab7df0; color: #ab7df0; }
+
+  /* ========= ナビ ========= */
+  .nav-bar {
+    display: flex;
+    gap: 8px;
+    padding: 10px 14px;
+    background: white;
+    flex-shrink: 0;
+    border-top: 1px solid #eee;
+    align-items: center;
+  }
+  .nav-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    background: #ee5a6f;
+    color: white;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .nav-btn:hover { background: #d94862; }
+  .nav-btn:disabled {
+    background: #ddd; color: #999; cursor: not-allowed;
+  }
+  .nav-btn.prev { background: #888; }
+  .nav-btn.prev:hover { background: #666; }
+  .nav-counter {
+    font-size: 11px;
+    color: #999;
+    font-weight: 700;
+    padding: 0 8px;
+    min-width: 50px;
+    text-align: center;
+  }
+
+  /* ========= ポップアップ ========= */
+  .leaflet-popup-content-wrapper { border-radius: 12px; }
+  .leaflet-popup-content { margin: 12px 14px; min-width: 200px; }
+  .popup-badge {
+    display: inline-block;
+    color: white;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .popup-title { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+  .popup-ko { font-size: 11px; color: #888; margin-bottom: 8px; }
+  .popup-naver {
+    display: block;
+    margin-top: 8px;
+    padding: 8px;
+    background: #03c75a;
+    color: white !important;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <h1>🇰🇷 韓国旅行</h1>
+    <div class="date">2026.5.31 → 6.3 · 3泊4日</div>
+  </div>
+
+  <div class="day-tabs" id="dayTabs">
+    <button class="day-tab active d1" data-day="1">5/31<br>(日)</button>
+    <button class="day-tab d2" data-day="2">6/1<br>(月)</button>
+    <button class="day-tab d3" data-day="3">6/2<br>(火)</button>
+    <button class="day-tab d4" data-day="4">6/3<br>(水)</button>
+  </div>
+
+  <div class="full-course-bar" id="fullCourseBar">
+    <div class="label">📌 この日の全コースをNAVERマップで開く</div>
+    <a id="fullCourseLink" href="#" target="_blank" rel="noopener">NAVERマップで全コース表示 →</a>
+  </div>
+
+  <div class="main">
+    <div id="map"></div>
+    <div class="panel" id="panel"></div>
+  </div>
+
+  <div class="nav-bar">
+    <button class="nav-btn prev" id="prevBtn">← 前へ</button>
+    <div class="nav-counter" id="counter">1 / 7</div>
+    <button class="nav-btn" id="nextBtn">次へ →</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ========= NAVERマップ 全コースリンク =========
+const dayFullCourseLinks = {
+  1: "https://naver.me/5t7JTXXu",
+  2: "https://naver.me/GLh81PFp",
+  3: "https://naver.me/GB3FUc6s",
+  4: "https://naver.me/GrgmBDTV"
+};
+
+// 各場所をNAVERマップで検索するURL生成
+function naverSearch(placeName) {
+  return `https://map.naver.com/p/search/${encodeURIComponent(placeName)}`;
+}
+
+// ========= データ =========
+const days = {
+  1: {
+    label: "DAY 1 · 入国日",
+    title: "5/31 (日) · 入国 + 明洞 + 弘大1·2次",
+    desc: "入国日。明洞餃子→射撃場→弘大1次(ギットゥル)→2次(サンウルリム)のパワフルコース。",
+    items: [
+      {num:1, cat:"Morning", time:"11:20 AM", name:"仁川空港 到着", icon:"✈️", ko:"인천공항", searchName:"인천국제공항", lat:37.4691, lng:126.4505, type:"Airport", memo:"入国 + 荷物 + SIM受取で1時間20分"},
+      {num:2, cat:"Afternoon", time:"2:00 PM", name:"ENA Suiteホテル 荷物預け", ko:"우신호텔", searchName:"우신호텔 명동", lat:37.5622611, lng:126.9738734, type:"Hotel", rating:"4.4", reviews:1300, memo:"中区 世宗大路11길 36"},
+      {num:3, cat:"Afternoon", time:"2:40 PM", name:"⭐ 明洞餃子 本店 (昼食)", ko:"명동교자 본점", searchName:"명동교자 본점", lat:37.5625266, lng:126.985609, type:"Dumpling Restaurant", rating:"4.2", reviews:14479, memo:"カルグクス + 餃子で軽く。ミシュラン掲載。"},
+      {num:4, cat:"Afternoon", time:"3:30 PM", name:"⭐ 明洞実弾射撃場", ko:"명동실탄사격장", searchName:"명동실탄사격장", lat:37.5618609, lng:126.9865438, type:"Sports Complex", rating:"4.4", reviews:211, memo:"サンシャインビル3F。日本人最初のインパクト体験。"},
+      {num:5, cat:"Evening", time:"5:30 PM", name:"Superdry 弘大店", ko:"슈퍼드라이 홍대점", searchName:"슈퍼드라이 홍대점", lat:37.5537402, lng:126.923337, type:"Clothing Store", rating:"4.7", reviews:3, memo:"短くショッピング(20分)"},
+      {num:6, cat:"Evening", time:"6:00 PM", name:"⭐ ギットゥル 弘大本店 (1次)", ko:"깃뜰 홍대본점", searchName:"깃뜰 홍대본점", lat:37.5503953, lng:126.9198003, type:"Korean Barbecue Restaurant", rating:"5.0", reviews:5805, memo:"サムギョプサル+モクサル。予約済。★5.0!"},
+      {num:7, cat:"Evening", time:"8:30 PM", name:"⭐ サンウルリム1992 (2次)", ko:"산울림1992", searchName:"산울림1992", lat:37.5546433, lng:126.9305494, type:"Bar", rating:"4.4", reviews:547, memo:"伝統酒/マッコリ。⚠️月曜休だけど5/31は日曜→営業OK"},
+    ]
+  },
+  2: {
+    label: "DAY 2 · 伝統 + 市場",
+    title: "6/1 (月) · 解酲 + 慶東·広場市場 + 景福宮",
+    desc: "韓国の伝統と料理を全部体験。解酲→市場→宮殿→鶏一羽→ユッケで一日完走。",
+    items: [
+      {num:1, cat:"Morning", time:"9:30 AM", name:"ミソンオク (解酲)", ko:"미성옥", searchName:"미성옥 명동", lat:37.5641238, lng:126.9839117, type:"Korean Restaurant", rating:"4.4", reviews:1501, memo:"ソルロンタンで前日の解酲。1966年創業。"},
+      {num:2, cat:"Morning", time:"11:00 AM", name:"⭐ スターバックス 慶東1960店", ko:"스타벅스 경동1960", searchName:"스타벅스 경동1960점", lat:37.5797613, lng:127.0386848, type:"Cafe", rating:"4.6", reviews:675, memo:"廃劇場リモデリングカフェ。韓国限定MD豊富。"},
+      {num:3, cat:"Afternoon", time:"12:50 PM", name:"慶東市場", ko:"경동시장", searchName:"경동시장", lat:37.57973, lng:127.0385399, type:"Market", rating:"4.1", reviews:10972, memo:"ヨンソネ떡갈비+꽈배기でつまみ食い。"},
+      {num:4, cat:"Afternoon", time:"3:00 PM", name:"景福宮", ko:"경복궁", searchName:"경복궁", lat:37.5796, lng:126.977, type:"Palace", memo:"韓服レンタルで入場無料+写真映え!"},
+      {num:5, cat:"Evening", time:"5:00 PM", name:"⭐ ホイシク 鐘路安国 (予約済)", ko:"호이식 종로 안국", searchName:"호이식 안국", lat:37.5778204, lng:126.9863106, type:"Chicken Restaurant", rating:"4.7", reviews:53, memo:"タッカンマリ。英語メニューあり。"},
+      {num:6, cat:"Evening", time:"6:30 PM", name:"仁寺洞・益善洞 散策", ko:"인사동·익선동", searchName:"인사동", lat:37.5757, lng:126.9854, type:"Walking", memo:"食後の散歩。韓屋エリア。"},
+      {num:7, cat:"Evening", time:"8:10 PM", name:"⭐ 広場市場 ユッケ (2次)", ko:"광장시장 육회자매집", searchName:"광장시장 육회자매집", lat:37.5705358, lng:126.9998698, type:"Korean Restaurant", rating:"4.2", reviews:2095, memo:"ユッケ자매집。日本SNS超有名!月曜休なら隣の부촌육회に。"},
+    ]
+  },
+  3: {
+    label: "DAY 3 · ショッピング",
+    title: "6/2 (火) · 城水 + 漢南 + 清潭",
+    desc: "今のソウル感性ショッピングDAY。minitmute火曜オンリー営業→絶対外せない!",
+    items: [
+      {num:1, cat:"Morning", time:"10:40 AM", name:"ソウル林", ko:"서울숲", searchName:"서울숲", lat:37.5443878, lng:127.0374424, type:"Park", rating:"4.6", reviews:10684, memo:"城水のエントランス・散策と写真。"},
+      {num:2, cat:"Afternoon", time:"11:30 AM", name:"城水でランチ", ko:"성수동", searchName:"성수동 맛집", lat:37.544, lng:127.055, type:"Lunch", memo:"ソグムジプデリ/カメルコーヒーなど軽めに。"},
+      {num:3, cat:"Afternoon", time:"1:00 PM", name:"⭐ minitmute 城水", ko:"미니뮤트 성수", searchName:"미니뮤트 성수", lat:37.5424591, lng:127.0562404, type:"Clothing Store", memo:"今回の旅で火曜日しか行けない!(日·月休・13時オープン)"},
+      {num:4, cat:"Afternoon", time:"2:00 PM", name:"⚠️ 城水自由時間", ko:"성수 자유시간", searchName:"성수동", lat:37.5436, lng:127.0566, type:"Free Time", memo:"💁‍♀️ ひなちゃんへ:行きたいお店あったら追加するよ!"},
+      {num:5, cat:"Afternoon", time:"4:00 PM", name:"⭐ piv'vee 漢南フラッグシップ", ko:"피브비 한남", searchName:"피브비 한남 플래그십", lat:37.5355848, lng:127.0010086, type:"Clothing Store", memo:"ひなちゃんインスタリクエスト!"},
+      {num:6, cat:"Evening", time:"5:30 PM", name:"⭐ 영천영화 清潭店", ko:"영천영화 청담점", searchName:"영천영화 청담점", lat:37.5239024, lng:127.0495471, type:"Korean Restaurant", rating:"4.2", reviews:1714, memo:"韓牛・ユッケ・ユッケビビンバ。24時間営業。"},
+    ]
+  },
+  4: {
+    label: "DAY 4 · 出国日",
+    title: "6/3 (水) · ザ·現代 + IFC + 空港",
+    desc: "ショッピングして17時に空港到着。⚠️6/3は地方選挙日→チンジュ家Plan B必要。",
+    items: [
+      {num:1, cat:"Morning", time:"9:30 AM", name:"ホテルチェックアウト", ko:"우신호텔", searchName:"우신호텔 명동", lat:37.5622611, lng:126.9738734, type:"Hotel", memo:"スーツケース持って出発。ホテル再訪なし。"},
+      {num:2, cat:"Morning", time:"10:30 AM", name:"⭐ ザ·現代ソウル", ko:"더현대 서울", searchName:"더현대 서울", lat:37.5259162, lng:126.9284926, type:"Department Store", rating:"4.6", reviews:318, memo:"1F Tourist Deskで荷物保管。Rockfish入店(B2F)。"},
+      {num:3, cat:"Morning", time:"11:00 AM", name:"⚠️ チンジュ家 (Plan A)", ko:"진주집", searchName:"진주집 여의도", lat:37.520782, lng:126.9269161, type:"Noodle Shop", rating:"4.2", reviews:3735, memo:"豆乳麺で有名。6/3地方選挙日で休業の可能性高い。"},
+      {num:4, cat:"Afternoon", time:"12:00 PM", name:"IFCモール", ko:"IFC몰", searchName:"IFC몰", lat:37.5250243, lng:126.9258867, type:"Shopping Mall", rating:"4.4", reviews:2119, memo:"ザ·現代の隣・Plan Bならここで昼食。"},
+      {num:5, cat:"Afternoon", time:"12:50 PM", name:"ザ·現代 + Rockfish (B2F)", ko:"더현대 + 록피시", searchName:"더현대 서울", lat:37.5259162, lng:126.9284926, type:"Shopping", memo:"Rockfish Weatherwearで最後の買い物。"},
+      {num:6, cat:"Afternoon", time:"2:15 PM", name:"ソウル駅 → AREX 15:30乗車", ko:"서울역", searchName:"서울역", lat:37.5547, lng:126.9707, type:"Train", memo:"直通列車。タクシーで15分。"},
+      {num:7, cat:"Afternoon", time:"4:13 PM", name:"✈️ 仁川空港 到着 (17:00前)", ko:"인천공항", searchName:"인천국제공항", lat:37.4691, lng:126.4505, type:"Airport", memo:"T1:16:13 / T2:16:21着。17:00条件クリア✓"},
+    ]
+  }
+};
+
+const dayColors = {1:'#ff6a88', 2:'#ff8a65', 3:'#66bb6a', 4:'#ab7df0'};
+
+let currentDay = 1;
+let currentIdx = 0;
+let markers = {};
+let polyline = null;
+
+const map = L.map('map', {zoomControl: true}).setView([37.55, 126.99], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19, attribution: '© OSM'
+}).addTo(map);
+
+function renderDay(day) {
+  currentDay = day;
+  currentIdx = 0;
+
+  document.querySelectorAll('.day-tab').forEach(t => {
+    t.classList.toggle('active', parseInt(t.dataset.day) === day);
+  });
+
+  // 全コースリンク更新
+  document.getElementById('fullCourseLink').href = dayFullCourseLinks[day];
+
+  Object.values(markers).forEach(m => map.removeLayer(m));
+  markers = {};
+  if (polyline) { map.removeLayer(polyline); polyline = null; }
+
+  const data = days[day];
+  const latlngs = data.items.map(p => [p.lat, p.lng]);
+
+  polyline = L.polyline(latlngs, {
+    color: dayColors[day], weight: 3, opacity: 0.6, dashArray: '8, 6'
+  }).addTo(map);
+
+  data.items.forEach((item, idx) => {
+    const icon = L.divIcon({
+      className: '',
+      html: `<div class="number-marker m-d${day}">${item.num}</div>`,
+      iconSize: [32, 32], iconAnchor: [16, 16]
+    });
+    const marker = L.marker([item.lat, item.lng], {icon}).addTo(map);
+    marker.bindPopup(`
+      <div>
+        <div class="popup-badge" style="background:${dayColors[day]}">DAY ${day} · #${item.num}</div>
+        <div class="popup-title">${item.name}</div>
+        <div class="popup-ko">${item.ko}</div>
+        <a href="${naverSearch(item.searchName)}" target="_blank" rel="noopener" class="popup-naver">📍 NAVERマップで開く</a>
+      </div>
+    `);
+    marker.on('click', () => focusItem(idx));
+    markers[idx] = marker;
+  });
+
+  renderPanel(day);
+
+  const group = L.featureGroup(Object.values(markers));
+  map.fitBounds(group.getBounds().pad(0.15));
+
+  setTimeout(() => focusItem(0), 300);
+}
+
+function renderPanel(day) {
+  const data = days[day];
+  const panel = document.getElementById('panel');
+
+  let html = `
+    <div class="day-summary">
+      <div class="day-label">${data.label}</div>
+      <h2>${data.title}</h2>
+      <p>${data.desc}</p>
+      <a href="${dayFullCourseLinks[day]}" target="_blank" rel="noopener" class="day-naver-btn">
+        🗺️ この日の全コースをNAVERマップで開く
+      </a>
+    </div>
+  `;
+
+  let lastCat = '';
+  data.items.forEach((item, idx) => {
+    if (item.cat !== lastCat) {
+      html += `<div class="time-category">${item.cat}</div>`;
+      lastCat = item.cat;
+    }
+
+    const ratingHtml = item.rating ?
+      `<div class="card-rating">★ ${item.rating} <span style="color:#999">(${item.reviews?.toLocaleString() || ''})</span> <span class="dot">·</span> <span class="card-type">${item.type}</span></div>` :
+      `<div class="card-type">${item.type}</div>`;
+
+    html += `
+      <div class="card d${day}" data-idx="${idx}" onclick="focusItem(${idx})">
+        <div class="card-marker">${item.num}</div>
+        <div class="card-time">${item.time}</div>
+        <div class="card-title">${item.name}</div>
+        ${item.ko ? `<div class="card-ko">${item.ko}</div>` : ''}
+        ${ratingHtml}
+        ${item.memo ? `<div class="card-memo">${item.memo}</div>` : ''}
+        <a href="${naverSearch(item.searchName)}" target="_blank" rel="noopener" class="naver-link" onclick="event.stopPropagation()">NAVERマップで開く</a>
+      </div>
+    `;
+  });
+
+  panel.innerHTML = html;
+}
+
+function focusItem(idx) {
+  currentIdx = idx;
+  const data = days[currentDay];
+  const item = data.items[idx];
+
+  document.querySelectorAll('.card').forEach((c, i) => {
+    c.classList.toggle('active', i === idx);
+  });
+
+  Object.entries(markers).forEach(([i, m]) => {
+    const el = m.getElement()?.querySelector('.number-marker');
+    if (el) el.classList.toggle('active', parseInt(i) === idx);
+  });
+
+  map.panTo([item.lat, item.lng], {animate: true, duration: 0.5});
+  markers[idx]?.openPopup();
+
+  const card = document.querySelector(`.card[data-idx="${idx}"]`);
+  card?.scrollIntoView({behavior: 'smooth', block: 'center'});
+
+  updateNav();
+}
+
+function updateNav() {
+  const data = days[currentDay];
+  document.getElementById('counter').textContent = `${currentIdx + 1} / ${data.items.length}`;
+  document.getElementById('prevBtn').disabled = (currentIdx === 0 && currentDay === 1);
+  document.getElementById('nextBtn').disabled = (currentIdx === data.items.length - 1 && currentDay === 4);
+}
+
+document.getElementById('dayTabs').addEventListener('click', e => {
+  if (e.target.dataset.day) renderDay(parseInt(e.target.dataset.day));
+});
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+  const data = days[currentDay];
+  if (currentIdx < data.items.length - 1) {
+    focusItem(currentIdx + 1);
+  } else if (currentDay < 4) {
+    renderDay(currentDay + 1);
+  }
+});
+
+document.getElementById('prevBtn').addEventListener('click', () => {
+  if (currentIdx > 0) {
+    focusItem(currentIdx - 1);
+  } else if (currentDay > 1) {
+    renderDay(currentDay - 1);
+    setTimeout(() => focusItem(days[currentDay].items.length - 1), 350);
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') document.getElementById('nextBtn').click();
+  if (e.key === 'ArrowLeft') document.getElementById('prevBtn').click();
+});
+
+renderDay(1);
+</script>
+
+</body>
+</html>
