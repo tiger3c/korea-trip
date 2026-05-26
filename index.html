@@ -185,6 +185,17 @@
     box-shadow: 0 4px 16px rgba(238,90,111,0.2);
     transform: scale(1.01);
   }
+  .card.hotel-start {
+    background: #fffbf0;
+    border: 1px dashed #ddb877;
+  }
+
+  .hotel-marker-style {
+    background: #fff8e1 !important;
+    border-color: #ddb877 !important;
+    color: #b8860b !important;
+  }
+
 
   .card-time {
     font-size: 13px;
@@ -347,6 +358,98 @@
     font-weight: 700;
     text-align: center;
   }
+
+  /* ========= 都心空港ターミナル 가이드 박스 ========= */
+  .guide-section {
+    background: white;
+    border-radius: 12px;
+    margin: 12px 0;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    overflow: hidden;
+    border: 2px solid #ee5a6f;
+  }
+  .guide-header {
+    background: linear-gradient(135deg, #ee5a6f, #f06595);
+    color: white;
+    padding: 12px 14px;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .guide-header::after {
+    content: "▼";
+    transition: transform 0.3s;
+    font-size: 11px;
+  }
+  .guide-section.collapsed .guide-header::after {
+    transform: rotate(-90deg);
+  }
+  .guide-body {
+    padding: 14px;
+    max-height: 800px;
+    overflow: hidden;
+    transition: max-height 0.4s ease, padding 0.4s ease;
+  }
+  .guide-section.collapsed .guide-body {
+    max-height: 0;
+    padding: 0 14px;
+  }
+  .guide-block {
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed #f0eae5;
+  }
+  .guide-block:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+  .guide-block h4 {
+    font-size: 12px;
+    color: #ee5a6f;
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+  .guide-block ul {
+    list-style: none;
+    padding: 0;
+  }
+  .guide-block li {
+    font-size: 11px;
+    color: #555;
+    line-height: 1.6;
+    padding-left: 18px;
+    position: relative;
+    margin-bottom: 4px;
+  }
+  .guide-block li::before {
+    content: "✓";
+    color: #03c75a;
+    font-weight: 700;
+    position: absolute;
+    left: 0;
+  }
+  .guide-block li.warn::before {
+    content: "⚠️";
+  }
+  .guide-block li.tip::before {
+    content: "💡";
+  }
+  .guide-merit {
+    background: #fff9e6;
+    border-left: 4px solid #ffa726;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    color: #555;
+    line-height: 1.6;
+    margin-top: 8px;
+  }
+  .guide-merit strong { color: #e65100; }
 </style>
 </head>
 <body>
@@ -385,15 +488,21 @@
 <script>
 // ========= NAVERマップ 全コースリンク =========
 const dayFullCourseLinks = {
-  1: "https://naver.me/5t7JTXXu",
-  2: "https://naver.me/GLh81PFp",
-  3: "https://naver.me/GB3FUc6s",
-  4: "https://naver.me/GrgmBDTV"
+  1: "https://naver.me/GrgmBDTV",
+  2: "https://naver.me/GB3FUc6s",
+  3: "https://naver.me/GLh81PFp",
+  4: "https://naver.me/5t7JTXXu"
 };
 
 // 各場所をNAVERマップで検索するURL生成
 function naverSearch(placeName) {
   return `https://map.naver.com/p/search/${encodeURIComponent(placeName)}`;
+}
+
+// 直接リンクが指定されていればそれを、なければ検索URLを返す
+function getNaverLink(item) {
+  if (item.naverUrl) return item.naverUrl;
+  return naverSearch(item.searchName);
 }
 
 // ========= データ =========
@@ -404,7 +513,7 @@ const days = {
     desc: "入国日。明洞餃子→射撃場→弘大1次(ギットゥル)→2次(サンウルリム)のパワフルコース。",
     items: [
       {num:1, cat:"Morning", time:"11:20 AM", name:"仁川空港 到着", icon:"✈️", ko:"인천공항", searchName:"인천국제공항", lat:37.4691, lng:126.4505, type:"Airport", memo:"入国 + 荷物 + SIM受取で1時間20分"},
-      {num:2, cat:"Afternoon", time:"2:00 PM", name:"ENA Suiteホテル 荷物預け", ko:"우신호텔", searchName:"우신호텔 명동", lat:37.5622611, lng:126.9738734, type:"Hotel", rating:"4.4", reviews:1300, memo:"中区 世宗大路11길 36"},
+      {num:2, cat:"Afternoon", time:"2:00 PM", name:"🏨 ENA Suite Hotel 到着・荷物預け", ko:"ENA Suite Hotel", searchName:"ENA Suite Hotel 명동", naverUrl:"https://map.naver.com/p/entry/place/1134495522", lat:37.5622611, lng:126.9738734, type:"Hotel", isHotel:true, memo:"中区 世宗大路11길 36 · 짐 보관 後すぐ出発"},
       {num:3, cat:"Afternoon", time:"2:40 PM", name:"⭐ 明洞餃子 本店 (昼食)", ko:"명동교자 본점", searchName:"명동교자 본점", lat:37.5625266, lng:126.985609, type:"Dumpling Restaurant", rating:"4.2", reviews:14479, memo:"カルグクス + 餃子で軽く。ミシュラン掲載。"},
       {num:4, cat:"Afternoon", time:"3:30 PM", name:"⭐ 明洞実弾射撃場", ko:"명동실탄사격장", searchName:"명동실탄사격장", lat:37.5618609, lng:126.9865438, type:"Sports Complex", rating:"4.4", reviews:211, memo:"サンシャインビル3F。日本人最初のインパクト体験。"},
       {num:5, cat:"Evening", time:"5:30 PM", name:"Superdry 弘大店", ko:"슈퍼드라이 홍대점", searchName:"슈퍼드라이 홍대점", lat:37.5537402, lng:126.923337, type:"Clothing Store", rating:"4.7", reviews:3, memo:"短くショッピング(20分)"},
@@ -415,15 +524,17 @@ const days = {
   2: {
     label: "DAY 2 · 伝統 + 市場",
     title: "6/1 (月) · 解酲 + 慶東·広場市場 + 景福宮",
-    desc: "韓国の伝統と料理を全部体験。解酲→市場→宮殿→鶏一羽→ユッケで一日完走。",
+    desc: "韓国の伝統と料理を全部体験!解酲→慶東市場グルメ(떡갈비+꽈배기)→景福宮→タッカンマリ→広場市場ユッケで完走。",
     items: [
-      {num:1, cat:"Morning", time:"9:30 AM", name:"ミソンオク (解酲)", ko:"미성옥", searchName:"미성옥 명동", lat:37.5641238, lng:126.9839117, type:"Korean Restaurant", rating:"4.4", reviews:1501, memo:"ソルロンタンで前日の解酲。1966年創業。"},
-      {num:2, cat:"Morning", time:"11:00 AM", name:"⭐ スターバックス 慶東1960店", ko:"스타벅스 경동1960", searchName:"스타벅스 경동1960점", lat:37.5797613, lng:127.0386848, type:"Cafe", rating:"4.6", reviews:675, memo:"廃劇場リモデリングカフェ。韓国限定MD豊富。"},
-      {num:3, cat:"Afternoon", time:"12:50 PM", name:"慶東市場", ko:"경동시장", searchName:"경동시장", lat:37.57973, lng:127.0385399, type:"Market", rating:"4.1", reviews:10972, memo:"ヨンソネ떡갈비+꽈배기でつまみ食い。"},
-      {num:4, cat:"Afternoon", time:"3:00 PM", name:"景福宮", ko:"경복궁", searchName:"경복궁", lat:37.5796, lng:126.977, type:"Palace", memo:"韓服レンタルで入場無料+写真映え!"},
-      {num:5, cat:"Evening", time:"5:00 PM", name:"⭐ ホイシク 鐘路安国 (予約済)", ko:"호이식 종로 안국", searchName:"호이식 안국", lat:37.5778204, lng:126.9863106, type:"Chicken Restaurant", rating:"4.7", reviews:53, memo:"タッカンマリ。英語メニューあり。"},
-      {num:6, cat:"Evening", time:"6:30 PM", name:"仁寺洞・益善洞 散策", ko:"인사동·익선동", searchName:"인사동", lat:37.5757, lng:126.9854, type:"Walking", memo:"食後の散歩。韓屋エリア。"},
-      {num:7, cat:"Evening", time:"8:10 PM", name:"⭐ 広場市場 ユッケ (2次)", ko:"광장시장 육회자매집", searchName:"광장시장 육회자매집", lat:37.5705358, lng:126.9998698, type:"Korean Restaurant", rating:"4.2", reviews:2095, memo:"ユッケ자매집。日本SNS超有名!月曜休なら隣の부촌육회に。"},
+      {num:1, cat:"Morning", time:"9:20 AM", name:"🏨 ENA Suite Hotel 出発", ko:"ENA Suite Hotel", searchName:"ENA Suite Hotel 명동", naverUrl:"https://map.naver.com/p/entry/place/1134495522", lat:37.5622611, lng:126.9738734, type:"Hotel", isHotel:true, memo:"前日2次があるから少しゆっくり出発"},
+      {num:2, cat:"Morning", time:"9:30 AM", name:"ミソンオク (解酲)", ko:"미성옥", searchName:"미성옥 명동", lat:37.5641238, lng:126.9839117, type:"Korean Restaurant", rating:"4.4", reviews:1501, memo:"ソルロンタンで前日の解酲。1966年創業。"},
+      {num:3, cat:"Morning", time:"11:00 AM", name:"⭐ スターバックス 慶東1960店", ko:"스타벅스 경동1960", searchName:"스타벅스 경동1960점", lat:37.5797613, lng:127.0386848, type:"Cafe", rating:"4.6", reviews:675, memo:"廃劇場リモデリングカフェ。韓国限定MD豊富。1時間30分〜2時間滞在。"},
+      {num:4, cat:"Afternoon", time:"12:50 PM", name:"⭐ 연서네 떡갈비 慶東市場店", ko:"연서네 떡갈비", searchName:"연서네 떡갈비 경동시장", lat:37.5806651, lng:127.0429083, type:"Korean Restaurant", rating:"4.3", reviews:3, memo:"떡갈비バーガー3,000ウォン。安くて美味しい!軽くつまみ食い。"},
+      {num:5, cat:"Afternoon", time:"1:15 PM", name:"⭐ 그시절그맛 꽈배기·찹쌀도너츠", ko:"그시절그맛", searchName:"그시절그맛 경동시장", lat:37.580165, lng:127.0398684, type:"Bakery", rating:"4.1", reviews:16, memo:"40年伝統。꽈배기3個2,000ウォン。⚠️木曜休。月曜OK。"},
+      {num:6, cat:"Afternoon", time:"3:00 PM", name:"景福宮", ko:"경복궁", searchName:"경복궁", lat:37.5796, lng:126.977, type:"Palace", memo:"韓服レンタルで入場無料+写真映え!"},
+      {num:7, cat:"Evening", time:"5:00 PM", name:"⭐ ホイシク 鐘路安国 (予約済)", ko:"호이식 종로 안국", searchName:"호이식 안국", lat:37.5778204, lng:126.9863106, type:"Chicken Restaurant", rating:"4.7", reviews:53, memo:"タッカンマリ。英語メニューあり。"},
+      {num:8, cat:"Evening", time:"6:30 PM", name:"仁寺洞・益善洞 散策", ko:"인사동·익선동", searchName:"인사동", lat:37.5757, lng:126.9854, type:"Walking", memo:"食後の散歩。韓屋エリア。"},
+      {num:9, cat:"Evening", time:"8:10 PM", name:"⭐ 広場市場 ユッケ (2次)", ko:"광장시장 육회자매집", searchName:"광장시장 육회자매집", lat:37.5705358, lng:126.9998698, type:"Korean Restaurant", rating:"4.2", reviews:2095, memo:"ユッケ자매집。日本SNS超有名!月曜休なら隣の부촌육회に。"},
     ]
   },
   3: {
@@ -431,26 +542,28 @@ const days = {
     title: "6/2 (火) · 城水 + 漢南 + 清潭",
     desc: "今のソウル感性ショッピングDAY。minitmute火曜オンリー営業→絶対外せない!",
     items: [
-      {num:1, cat:"Morning", time:"10:40 AM", name:"ソウル林", ko:"서울숲", searchName:"서울숲", lat:37.5443878, lng:127.0374424, type:"Park", rating:"4.6", reviews:10684, memo:"城水のエントランス・散策と写真。"},
-      {num:2, cat:"Afternoon", time:"11:30 AM", name:"城水でランチ", ko:"성수동", searchName:"성수동 맛집", lat:37.544, lng:127.055, type:"Lunch", memo:"ソグムジプデリ/カメルコーヒーなど軽めに。"},
-      {num:3, cat:"Afternoon", time:"1:00 PM", name:"⭐ minitmute 城水", ko:"미니뮤트 성수", searchName:"미니뮤트 성수", lat:37.5424591, lng:127.0562404, type:"Clothing Store", memo:"今回の旅で火曜日しか行けない!(日·月休・13時オープン)"},
-      {num:4, cat:"Afternoon", time:"2:00 PM", name:"⚠️ 城水自由時間", ko:"성수 자유시간", searchName:"성수동", lat:37.5436, lng:127.0566, type:"Free Time", memo:"💁‍♀️ ひなちゃんへ:行きたいお店あったら追加するよ!"},
-      {num:5, cat:"Afternoon", time:"4:00 PM", name:"⭐ piv'vee 漢南フラッグシップ", ko:"피브비 한남", searchName:"피브비 한남 플래그십", lat:37.5355848, lng:127.0010086, type:"Clothing Store", memo:"ひなちゃんインスタリクエスト!"},
-      {num:6, cat:"Evening", time:"5:30 PM", name:"⭐ 영천영화 清潭店", ko:"영천영화 청담점", searchName:"영천영화 청담점", lat:37.5239024, lng:127.0495471, type:"Korean Restaurant", rating:"4.2", reviews:1714, memo:"韓牛・ユッケ・ユッケビビンバ。24時間営業。"},
+      {num:1, cat:"Morning", time:"10:00 AM", name:"🏨 ENA Suite Hotel 出発", ko:"ENA Suite Hotel", searchName:"ENA Suite Hotel 명동", naverUrl:"https://map.naver.com/p/entry/place/1134495522", lat:37.5622611, lng:126.9738734, type:"Hotel", isHotel:true, memo:"地下鉄で서울숲へ(30分)"},
+      {num:2, cat:"Morning", time:"10:40 AM", name:"ソウル林", ko:"서울숲", searchName:"서울숲", lat:37.5443878, lng:127.0374424, type:"Park", rating:"4.6", reviews:10684, memo:"城水のエントランス・散策と写真。"},
+      {num:3, cat:"Afternoon", time:"11:30 AM", name:"城水でランチ", ko:"성수동", searchName:"성수동 맛집", lat:37.544, lng:127.055, type:"Lunch", memo:"ソグムジプデリ/カメルコーヒーなど軽めに。"},
+      {num:4, cat:"Afternoon", time:"1:00 PM", name:"⭐ minitmute 城水", ko:"미니뮤트 성수", searchName:"미니뮤트 성수", lat:37.5424591, lng:127.0562404, type:"Clothing Store", memo:"今回の旅で火曜日しか行けない!(日·月休・13時オープン)"},
+      {num:5, cat:"Afternoon", time:"2:00 PM", name:"⚠️ 城水自由時間", ko:"성수 자유시간", searchName:"성수동", lat:37.5436, lng:127.0566, type:"Free Time", memo:"💁‍♀️ ひなちゃんへ:行きたいお店あったら追加するよ!"},
+      {num:6, cat:"Afternoon", time:"4:00 PM", name:"⭐ piv'vee 漢南フラッグシップ", ko:"피브비 한남", searchName:"피브비 한남 플래그십", lat:37.5355848, lng:127.0010086, type:"Clothing Store", memo:"ひなちゃんインスタリクエスト!"},
+      {num:7, cat:"Evening", time:"5:30 PM", name:"⭐ 영천영화 清潭店", ko:"영천영화 청담점", searchName:"영천영화 청담점", lat:37.5239024, lng:127.0495471, type:"Korean Restaurant", rating:"4.2", reviews:1714, memo:"韓牛・ユッケ・ユッケビビンバ。24時間営業。"},
     ]
   },
   4: {
     label: "DAY 4 · 出国日",
-    title: "6/3 (水) · ザ·現代 + IFC + 空港",
-    desc: "ショッピングして17時に空港到着。⚠️6/3は地方選挙日→チンジュ家Plan B必要。",
+    title: "6/3 (水) · ソウル駅で荷物処理 + 江南マッククス + 더현대",
+    desc: "最終日!ホテル戻らずソウル駅で荷物処理→江南으로 들기름막국수+보쌈→더현대 쇼핑→공항。17時着確実プラン。",
     items: [
-      {num:1, cat:"Morning", time:"9:30 AM", name:"ホテルチェックアウト", ko:"우신호텔", searchName:"우신호텔 명동", lat:37.5622611, lng:126.9738734, type:"Hotel", memo:"スーツケース持って出発。ホテル再訪なし。"},
-      {num:2, cat:"Morning", time:"10:30 AM", name:"⭐ ザ·現代ソウル", ko:"더현대 서울", searchName:"더현대 서울", lat:37.5259162, lng:126.9284926, type:"Department Store", rating:"4.6", reviews:318, memo:"1F Tourist Deskで荷物保管。Rockfish入店(B2F)。"},
-      {num:3, cat:"Morning", time:"11:00 AM", name:"⚠️ チンジュ家 (Plan A)", ko:"진주집", searchName:"진주집 여의도", lat:37.520782, lng:126.9269161, type:"Noodle Shop", rating:"4.2", reviews:3735, memo:"豆乳麺で有名。6/3地方選挙日で休業の可能性高い。"},
-      {num:4, cat:"Afternoon", time:"12:00 PM", name:"IFCモール", ko:"IFC몰", searchName:"IFC몰", lat:37.5250243, lng:126.9258867, type:"Shopping Mall", rating:"4.4", reviews:2119, memo:"ザ·現代の隣・Plan Bならここで昼食。"},
-      {num:5, cat:"Afternoon", time:"12:50 PM", name:"ザ·現代 + Rockfish (B2F)", ko:"더현대 + 록피시", searchName:"더현대 서울", lat:37.5259162, lng:126.9284926, type:"Shopping", memo:"Rockfish Weatherwearで最後の買い物。"},
-      {num:6, cat:"Afternoon", time:"2:15 PM", name:"ソウル駅 → AREX 15:30乗車", ko:"서울역", searchName:"서울역", lat:37.5547, lng:126.9707, type:"Train", memo:"直通列車。タクシーで15分。"},
-      {num:7, cat:"Afternoon", time:"4:13 PM", name:"✈️ 仁川空港 到着 (17:00前)", ko:"인천공항", searchName:"인천국제공항", lat:37.4691, lng:126.4505, type:"Airport", memo:"T1:16:13 / T2:16:21着。17:00条件クリア✓"},
+      {num:1, cat:"Morning", time:"9:20 AM", name:"🏨 ENA Suite Hotel チェックアウト", ko:"ENA Suite Hotel", searchName:"ENA Suite Hotel 명동", naverUrl:"https://map.naver.com/p/entry/place/1134495522", lat:37.5622611, lng:126.9738734, type:"Hotel", isHotel:true, memo:"荷物持ってソウル駅へ直行"},
+      {num:2, cat:"Morning", time:"10:10 AM", name:"⭐ ソウル駅 都心空港ターミナル", ko:"서울역 도심공항터미널", searchName:"서울역 도심공항터미널", lat:37.5547, lng:126.9707, type:"Check-in", memo:"🛂 大韓航空(KE)対応!地下2F・05:20-19:00運営。✈️ T2出発の3時間20分前まで。スーツケース預けて身軽に観光<br>👉 詳しい持ち物・出国通路は下の「📋 都心空港ターミナル詳細ガイド」参照", hasGuide:true},
+      {num:3, cat:"Morning", time:"11:15 AM", name:"⭐ 강남막국수&보쌈 (江南)", ko:"강남막국수&보쌈", searchName:"강남막국수보쌈 강남", lat:37.4975834, lng:127.0301346, type:"Korean Restaurant", rating:"4.8", reviews:28, memo:"⭐4.8の絶品店!エゴマ油マッククス + ボッサム。日本語メニューあり。⚠️日曜休だけど水曜OK!"},
+      {num:4, cat:"Afternoon", time:"12:50 PM", name:"⭐ ザ·現代ソウル / Rockfish (B2F)", ko:"더현대 서울", searchName:"더현대 서울", lat:37.5259162, lng:126.9284926, type:"Department Store", rating:"4.6", reviews:318, memo:"Rockfish Weatherwear入店!最後の買い物。"},
+      {num:5, cat:"Afternoon", time:"2:00 PM", name:"IFCモール (短く)", ko:"IFC몰", searchName:"IFC몰", lat:37.5250243, lng:126.9258867, type:"Shopping Mall", rating:"4.4", reviews:2119, memo:"더현대のすぐ隣。時間あれば寄る。"},
+      {num:6, cat:"Afternoon", time:"2:25 PM", name:"ソウル駅へ移動", ko:"서울역", searchName:"서울역", lat:37.5547, lng:126.9707, type:"Train", memo:"タクシーで15分"},
+      {num:7, cat:"Afternoon", time:"3:30 PM", name:"AREX直通列車 乗車", ko:"공항철도 직통열차", searchName:"서울역 공항철도", lat:37.5547, lng:126.9707, type:"Train", memo:"ソウル駅 15:30発が安全圏"},
+      {num:8, cat:"Afternoon", time:"4:13 PM", name:"✈️ 仁川空港 到着", ko:"인천공항", searchName:"인천국제공항", lat:37.4691, lng:126.4505, type:"Airport", memo:"T1:16:13 / T2:16:21着。17:00条件クリア ✓"},
     ]
   }
 };
@@ -490,9 +603,11 @@ function renderDay(day) {
   }).addTo(map);
 
   data.items.forEach((item, idx) => {
+    const markerClass = item.isHotel ? `number-marker hotel-marker-style` : `number-marker m-d${day}`;
+    const markerContent = item.isHotel ? '🏨' : item.num;
     const icon = L.divIcon({
       className: '',
-      html: `<div class="number-marker m-d${day}">${item.num}</div>`,
+      html: `<div class="${markerClass}">${markerContent}</div>`,
       iconSize: [32, 32], iconAnchor: [16, 16]
     });
     const marker = L.marker([item.lat, item.lng], {icon}).addTo(map);
@@ -501,7 +616,7 @@ function renderDay(day) {
         <div class="popup-badge" style="background:${dayColors[day]}">DAY ${day} · #${item.num}</div>
         <div class="popup-title">${item.name}</div>
         <div class="popup-ko">${item.ko}</div>
-        <a href="${naverSearch(item.searchName)}" target="_blank" rel="noopener" class="popup-naver">📍 NAVERマップで開く</a>
+        <a href="${getNaverLink(item)}" target="_blank" rel="noopener" class="popup-naver">📍 NAVERマップで開く</a>
       </div>
     `);
     marker.on('click', () => focusItem(idx));
@@ -520,6 +635,51 @@ function renderPanel(day) {
   const data = days[day];
   const panel = document.getElementById('panel');
 
+  // DAY 4 専用ガイド (都心空港ターミナル) - day-summary 뒤에 표시
+  const day4Guide = day === 4 ? `
+    <div class="guide-section" id="terminalGuide">
+      <div class="guide-header" onclick="document.getElementById('terminalGuide').classList.toggle('collapsed')">
+        <span>📋 ソウル駅 都心空港ターミナル 詳細ガイド</span>
+      </div>
+      <div class="guide-body">
+        <div class="guide-block">
+          <h4>✈️ 基本情報</h4>
+          <ul>
+            <li>場所: ソウル駅 地下2F (AREX連結通路)</li>
+            <li>営業: 5:20 〜 19:00</li>
+            <li>対応航空会社: 大韓航空(KE)、アシアナ(OZ)、チェジュ航空など</li>
+            <li class="warn">大韓航空T2出発の<strong>3時間20分前</strong>まで受付!</li>
+          </ul>
+        </div>
+
+        <div class="guide-block">
+          <h4>🎫 持ち物リスト (必須)</h4>
+          <ul>
+            <li>パスポート (本人確認)</li>
+            <li>Eチケット (大韓航空アプリ表示OK)</li>
+            <li>クレジットカード (追加料金時)</li>
+          </ul>
+        </div>
+
+        <div class="guide-block">
+          <h4>🧳 荷物注意</h4>
+          <ul>
+            <li>1人最大32kg・158cm以下</li>
+            <li class="warn">リチウム電池/モバイルバッテリーは<strong>機内持込</strong>に</li>
+            <li class="warn">ライター・スプレー類も機内持込NG</li>
+            <li class="tip">飲みかけのペットボトルは捨てて再購入</li>
+          </ul>
+        </div>
+
+        <div class="guide-merit">
+          <strong>🛂 最大のメリット:</strong><br>
+          都心空港でチェックインすると、仁川空港T2の<strong>3階出国場で「Express Departure」専用通路</strong>が使えるよ!通常30分かかる出国審査が<strong>5分</strong>で終わる⚡<br>
+          (チェックイン時に専用シールがパスポートに貼られます)
+        </div>
+      </div>
+    </div>
+  ` : '';
+
   let html = `
     <div class="day-summary">
       <div class="day-label">${data.label}</div>
@@ -529,6 +689,7 @@ function renderPanel(day) {
         🗺️ この日の全コースをNAVERマップで開く
       </a>
     </div>
+    ${day4Guide}
   `;
 
   let lastCat = '';
@@ -542,15 +703,17 @@ function renderPanel(day) {
       `<div class="card-rating">★ ${item.rating} <span style="color:#999">(${item.reviews?.toLocaleString() || ''})</span> <span class="dot">·</span> <span class="card-type">${item.type}</span></div>` :
       `<div class="card-type">${item.type}</div>`;
 
+    const cardClass = `card d${day}` + (item.isHotel ? ' hotel-start' : '');
+    const cardMarkerContent = item.isHotel ? '🏨' : item.num;
     html += `
-      <div class="card d${day}" data-idx="${idx}" onclick="focusItem(${idx})">
-        <div class="card-marker">${item.num}</div>
+      <div class="${cardClass}" data-idx="${idx}" onclick="focusItem(${idx})">
+        <div class="card-marker">${cardMarkerContent}</div>
         <div class="card-time">${item.time}</div>
         <div class="card-title">${item.name}</div>
         ${item.ko ? `<div class="card-ko">${item.ko}</div>` : ''}
         ${ratingHtml}
         ${item.memo ? `<div class="card-memo">${item.memo}</div>` : ''}
-        <a href="${naverSearch(item.searchName)}" target="_blank" rel="noopener" class="naver-link" onclick="event.stopPropagation()">NAVERマップで開く</a>
+        <a href="${getNaverLink(item)}" target="_blank" rel="noopener" class="naver-link" onclick="event.stopPropagation()">NAVERマップで開く</a>
       </div>
     `;
   });
